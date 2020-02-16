@@ -3,17 +3,19 @@ import feedparser
 
 
 class SaveRssPodcasts:
-    def __init__(self, url, filename_start="podcast"):
+    def __init__(self, url, filename_start="podcast", no_download=False):
         """
         Helps download podcasts from RSS feeds
         Args:
             url: rss feed url
             filename_start: (optional) start of filename for each saved podcast
+            no_download (bool): if True download of file won't take place
         """
         self.url = url
         self.filename_start = filename_start
         self.feed = feedparser.parse(url)
         self.titles = []
+        self.no_download = no_download
 
     def show_latest_episodes(self, count=5):
         """Print titles of the most recent episodes"""
@@ -57,8 +59,11 @@ class SaveRssPodcasts:
 
         Args:
             wanted_episodes: iterable containing episode numbers (can be int or str)
+        Returns:
+            list of successfully downloaded episodes
         """
         episodes = self.find_wanted_episodes(wanted_episodes)
+        successful_downloads = []
         for episode, entry in episodes.items():
             # Construct middle part of filename from the podcast title
             title = entry.get("title", "no-title")
@@ -75,8 +80,13 @@ class SaveRssPodcasts:
                     filename = filename + ".mp3"
                     # Download and save
                     # todo - (i)add exception handling (ii) download progress indicator
-                    urllib.request.urlretrieve(url, filename)
-                    print("Saved:", filename)
+                    if not self.no_download:
+                        urllib.request.urlretrieve(url, filename)
+                        print("Saved:", filename)
+                        successful_downloads.append(episode)
+                    else:
+                        print("Not downloaded:", filename)
+        return successful_downloads
 
 
 def find_numbers_in_string(text):
@@ -96,10 +106,9 @@ def find_numbers_in_string(text):
     return extracted_numbers
 
 
-
+# Example use
 if __name__ == "__main__":
-    #mince = SaveRssPodcasts("https://rss.acast.com/athleticomince", "mince-")
-    #mince.save_episodes([60, 61])
-
+    mince = SaveRssPodcasts("https://rss.acast.com/athleticomince", "mince-")
+    mince.save_episodes([60, 61])
     rhlstp = SaveRssPodcasts("http://rss.acast.com/rhlstp", "")
     rhlstp.save_episodes([229])
